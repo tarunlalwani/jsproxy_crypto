@@ -5,12 +5,12 @@ The encryption scheme used by Mikrotik's Webfig terminal software as seen on the
 ## Proof of Concept Summary
 ### Sample
 Sample files that can be used with the proof of concept software are located in the *sample* directory:
-1. **login.pcap**: A pcap file containing a single web terminal session.
-2. **passwords.txt**: A short list of passwords to use with the MD4 bruteforce software.
+* **login.pcap**: A pcap file containing a single web terminal session.
+* **passwords.txt**: A short list of passwords to use with the MD4 bruteforce software.
 
 ### Software
 Three proof of concepts are included in this repository:
-1. **jsproxy_md4_bruteforce**: Using a provided pcap and password list this tool will generate the masterkey used for the terminal send and receive functions.
+* **jsproxy_md4_bruteforce**: Using a provided pcap and password list this tool will generate the masterkey used for the terminal send and receive functions.
 ```sh
 charlie@wildcard:~/jsproxy_crypto/md4_bruteforce/build$ ./jsproxy_md4_bruteforce -f ../../sample/login.pcap -p ../../sample/passwords.txt 
 [+] Loading passwords...
@@ -23,7 +23,7 @@ Password: test
 SHA-1(Password SHA-1): 2066656e05c22f3a995ad9ecfed913d6
 Master Key: d1dd2f0fe4f5c1c4386595c4b56e64c9
 ```
-2. **jsproxy_des_bruteforce**: Using a provided pcap this tool will generate the master key used for the terminal send and receive functions. Note that this tool is keyed to break the the provided session in exampes/login.pcapng and is a proof of concept in the truest sense. For full technical details see the technical details section.
+* **jsproxy_des_bruteforce**: Using a provided pcap this tool will generate the master key used for the terminal send and receive functions. Note that this tool is keyed to break the the provided session in exampes/login.pcapng and is a proof of concept in the truest sense. For full technical details see the technical details section.
 ```sh
 charlie@wildcard:~/jsproxy_crypto/des_bruteforce/build$ ./jsproxy_des_bruteforce -f ../../sample/login.pcap 
 [+] Initial request found.
@@ -40,7 +40,7 @@ Password SHA-1: 0cb6948805f797bf2a82807973b89537
 SHA-1(Password SHA-1): 2066656e05c22f3a995ad9ecfed913d6
 Master Key: d1dd2f0fe4f5c1c4386595c4b56e64c9
 ```
-3. **jsproxy_session_decrypt**: Using a provided pcap and a masterkey this tool will decrypt the terminal session in the pcap and write the plaintext to standard out.
+* **jsproxy_session_decrypt**: Using a provided pcap and a masterkey this tool will decrypt the terminal session in the pcap and write the plaintext to standard out.
 ```sh
 charlie@wildcard:~/jsproxy_crypto/session_decrypt/bu$ ./jsproxy_session_decrypt -f ../../sample/login.pcap -m d1dd2f0fe4f5c1c4386595c4b56e64c9
 [+] Initial request found.
@@ -120,14 +120,14 @@ At code point offset 8 after the HTTP response the server has included 16 bytes 
 
 #### Challenge Response
 The client responds to the server's challenge by HTTP POSTing to /jsproxy again. A number of things can be found in the challenge response:
-1. A hardcoded 16 byte challenge string.
-2. The hardcoded challenge concatenated with the server's random challenge and the username that is then pushed through SHA1 and truncated to 8 bytes to create the "challenge hash".
-3. The challenge hash DES encrypted with three different keys and concatenated together to generate the "response" string.
-4. The username in ASCII.
+* A hardcoded 16 byte challenge string.
+* The hardcoded challenge concatenated with the server's random challenge and the username that is then pushed through SHA1 and truncated to 8 bytes to create the "challenge hash".
+* The challenge hash DES encrypted with three different keys and concatenated together to generate the "response" string.
+* The username in ASCII.
 
 The above contains almost everything you need to generate the "master key" that will be used to initialize the RC4 state. The only secret that is not available to us is the user's password. The user's password is used in two ways:
-1. The user's password is MD4 hashed and then "hashed" again to generate the three keys used in the DES encryption.
-2. The MD4 hash of the password is MD4 hashed again, combined with "response" and a "magic" string, run through SHA1, and truncated to 16 bytes to generate the "master key" that will be used to initialize the RC4 send and receive states.
+* The user's password is MD4 hashed and then "hashed" again to generate the three keys used in the DES encryption.
+* The MD4 hash of the password is MD4 hashed again, combined with "response" and a "magic" string, run through SHA1, and truncated to 16 bytes to generate the "master key" that will be used to initialize the RC4 send and receive states.
 
 ##### Brute Forcing the DES Keys to Obtain the MD4 Hash of the User's Password
 The "hash" used to generate the keys for the DES encryption is reversible. The "hash" takes the 16 bytes of the MD4(password) and creates 24 bytes of data that is chopped up into three DES keys. There is some bit shifting so that there is not a direct mapping of the MD4(password) to the key, but it is easily undone. In fact, here is the code the PoC uses to convert a DES key to 7 bytes of the MD4(password) hash:
@@ -183,10 +183,10 @@ However, on my home hardware, brute forcing 56-bit keys in a reasonable amount o
 
 ##### Brute Forcing the MD4(password) to Generate the Master Key
 As mentioned above, brute forcing two 56-bit DES keys is not practical for most people. However, we don't need to actually break the DES keys to start decrypting the terminal data. We just need to guess what the MD4(password) is. This is easy to solve if we trust the user to make a guessable password and we have a password list handy. For each password we guess we just have to:
-1. MD4 hash the password we are guessing
-2. Generate the DES encrypted "responses" without our MD4(password)
-3. Compare what we generated against the "response" in the pcap.
-4. If they match then we have the user's password and we can decrypt the terminal sessions. Else go to 1.
+* MD4 hash the password we are guessing
+* Generate the DES encrypted "responses" without our MD4(password)
+* Compare what we generated against the "response" in the pcap.
+* If they match then we have the user's password and we can decrypt the terminal sessions. Else go to 1.
 
 # Summary
 I've explained two ways we can recover the MD4(password) so that we can decrypt the web terminal traffic. I've provided code and a pcap so that you can try it yourself. I must stress that the code is very proof of concept but it works for the provided sample.
